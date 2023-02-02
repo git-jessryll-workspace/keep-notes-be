@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Note;
 
 use App\Http\Controllers\Controller;
+use App\Models\FolderNote;
 use App\Models\Note;
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class NoteController extends Controller
 {
@@ -122,11 +124,16 @@ class NoteController extends Controller
     public function index(Request $request)
     {
         $notes = Note::where('user_id', $request->user()->id)->get();
+        $noteIds = $notes->map(function ($item) {
+            return $item->id;
+        });
         $tags = Tag::query()
-            ->whereIn('taggable_id', $notes->map(function ($item) {
-                return $item->id;
-            }))
+            ->whereIn('taggable_id', $noteIds)
             ->where('taggable_type', 'NOTE')
+            ->get();
+        $folderNotes = FolderNote::query()
+            ->whereIn('note_id', $noteIds)
+            ->where('user_id', $request->user()->id)
             ->get();
 
         foreach ($notes as $note) {
@@ -135,8 +142,11 @@ class NoteController extends Controller
             foreach ($noteTags as $tag) {
                 array_push($tagList, $tag);
             }
+            $folderNote = $folderNotes->where('note_id', $note->id)->first();
             $note['tags'] = $tagList;
+            $note['folder'] = $folderNote;
         }
+
 
         return response()->json($notes, 200);
     }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Folder\FolderController;
+use App\Http\Controllers\Folder\FolderNoteController;
 use App\Http\Controllers\Note\NoteController;
 use App\Http\Controllers\TagController;
 use Illuminate\Http\Request;
@@ -20,23 +22,39 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
 });
 
-Route::middleware(['auth:sanctum'])->group(function() {
-    Route::prefix('notes')->controller(NoteController::class)->group(function() {
+Route::middleware(['auth:sanctum'])->group(function () {
+    Route::prefix('notes')->controller(NoteController::class)->group(function () {
         Route::get('/', 'index');
         Route::post('/', 'store');
-        Route::prefix('{id}')->group(function() {
+        Route::prefix('{id}')->group(function () {
             Route::get('/', 'show');
             Route::put('/', 'update');
             Route::delete('/', 'destroy');
         });
     });
 
-    Route::prefix('tags')->controller(TagController::class)->group(function() {
+    Route::prefix('tags')->controller(TagController::class)->group(function () {
         Route::get('/', 'index');
         Route::post('/', 'store');
-        Route::prefix('{id}')->group(function() {
+        Route::prefix('{id}')->group(function () {
             Route::put('/', 'update');
             Route::delete('/', 'destroy');
+        });
+    });
+
+    Route::prefix('folders')->controller(FolderController::class)->group(function () {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::prefix('{id}')->group(function () {
+            Route::put('/', 'update');
+            Route::delete('/', 'destroy');
+        });
+    });
+
+    Route::prefix('folder-notes')->controller(FolderNoteController::class)->group(function () {
+        Route::post('/', 'store');
+        Route::prefix('{id}')->group(function () {
+            Route::prefix('/', 'destroy');
         });
     });
 });
