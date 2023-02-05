@@ -19,6 +19,7 @@ return new class extends Migration
             $table->unsignedBigInteger('note_id');
             $table->unsignedBigInteger('folder_id');
             $table->timestamps();
+            $table->index(['user_id', 'note_id', 'folder_id']);
         });
     }
 

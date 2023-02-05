@@ -3,81 +3,68 @@
 namespace App\Http\Controllers\Note;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreNoteRequest;
+use App\Http\Requests\UpdateNoteRequest;
 use App\Models\FolderNote;
 use App\Models\Note;
 use App\Models\Tag;
+use App\Services\Notes\FetchAllNoteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class NoteController extends Controller
 {
     /**
-     * Data created
-     *
-     * @param Request $request
-     * @return void
+     * @param StoreNoteRequest $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function store(Request $request)
+    public function store(StoreNoteRequest $request): \Illuminate\Http\JsonResponse
     {
-        $request->validate([
-            'title' => 'required|min:3',
-        ]);
-
-        $userId = $request->user()->id;
-
-        $note = Note::create([
+        $data = [
             'title' => $request['title'],
             'body' => $request['body'],
-            'user_id' => $userId,
-        ]);
-        return response()->json($note, 201);
+            'user_id' => auth()->id(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+        $data['id'] = DB::table('keep_notes_app.notes')->insertGetId($data);
+        return response()->json($data, 201);
     }
+
     /**
-     * Data updated
-     *
-     * @param [type] $id
-     * @param Request $request
-     * @return void
+     * @param $id
+     * @param UpdateNoteRequest $request
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function update($id, Request $request)
+    public function update($id, UpdateNoteRequest $request): \Illuminate\Http\JsonResponse
     {
-        $request->validate([
-            'title' => 'required|min:3',
-        ]);
 
-        $note = Note::find($id);
-
-        if (!$note) {
-            return response()->json([
-                'error_message' => 'Data not found',
-            ], 404);
-        }
-
-        Note::where('id', $id)->update([
-            'title' => $request['title'],
-            'body' => $request['body']
-        ]);
-
-        $note = Note::find($id);
-
+        DB::table('keep_notes_app.notes')
+            ->where('id', $id)
+            ->update([
+                'title' => $request['title'],
+                'body' => $request['body'],
+                'updated_at' => now()
+            ]);
 
         return response()->json([
             'id' => $id,
             'title' => $request['title'],
             'body' => $request['body'],
-            'updated_at' => $note->updated_at,
-        ], 201);
+            'updated_at' => now(),
+        ], 200);
     }
+
     /**
-     * Data Deleted
-     *
-     * @param [type] $id
-     * @param Request $request
-     * @return void
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function destroy($id, Request $request)
+    public function destroy($id): \Illuminate\Http\JsonResponse
     {
-        $note = Note::find($id);
+        $note = DB::table('keep_notes_app.notes')
+            ->where('id', $id)
+            ->select(['id'])
+            ->first();
 
         if (!$note) {
             return response()->json([
@@ -85,7 +72,7 @@ class NoteController extends Controller
             ], 404);
         }
 
-        if ($note->user_id !== $request->user()->id) {
+        if ($note->user_id !== auth()->id()) {
             return response()->json([
                 'error_message' => "Not Authorized",
             ], 401);
@@ -97,15 +84,17 @@ class NoteController extends Controller
             'message' => 'Data deleted'
         ], 204);
     }
+
     /**
-     * Get Data details
-     *
-     * @param [type] $id
-     * @return void
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function show($id)
+    public function show($id): \Illuminate\Http\JsonResponse
     {
-        $note = Note::find($id);
+        $note = DB::table('keep_notes_app.notes')
+            ->where('id', $id)
+            ->select(['title', 'body', 'id', 'updated_at', 'is_active'])
+            ->first();
 
         if (!$note) {
             return response()->json([
@@ -113,39 +102,13 @@ class NoteController extends Controller
             ], 404);
         }
 
-        return response()->json($note->toArray(), 200);
+        return response()->json($note, 200);
     }
-    /**
-     * get all note list
-     *
-     * @param Request $request
-     * @return void
-     */
-    public function index(Request $request)
-    {
-        $notes = Note::where('user_id', $request->user()->id)->get();
-        $noteIds = $notes->map(function ($item) {
-            return $item->id;
-        });
-        $tags = Tag::query()
-            ->whereIn('taggable_id', $noteIds)
-            ->where('taggable_type', 'NOTE')
-            ->get();
-        $folderNotes = FolderNote::query()
-            ->whereIn('note_id', $noteIds)
-            ->where('user_id', $request->user()->id)
-            ->get();
 
-        foreach ($notes as $note) {
-            $noteTags = $tags->where('taggable_id', $note->id);
-            $tagList = [];
-            foreach ($noteTags as $tag) {
-                array_push($tagList, $tag);
-            }
-            $folderNote = $folderNotes->where('note_id', $note->id)->first();
-            $note['tags'] = $tagList;
-            $note['folder'] = $folderNote;
-        }
+    public function index(Request $request, FetchAllNoteService $fetchAllNoteService): \Illuminate\Http\JsonResponse
+    {
+        $notes = $fetchAllNoteService->all();
+        
 
 
         return response()->json($notes, 200);

@@ -28,7 +28,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', 'store');
         Route::prefix('{id}')->group(function () {
             Route::get('/', 'show');
-            Route::put('/', 'update');
+            Route::put('/', 'update')->withoutMiddleware('throttle:api');
             Route::delete('/', 'destroy');
         });
     });
@@ -52,9 +52,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
     });
 
     Route::prefix('folder-notes')->controller(FolderNoteController::class)->group(function () {
+        Route::get('/', 'index');
         Route::post('/', 'store');
         Route::prefix('{id}')->group(function () {
-            Route::prefix('/', 'destroy');
+            Route::delete('/', 'destroy');
         });
     });
 });

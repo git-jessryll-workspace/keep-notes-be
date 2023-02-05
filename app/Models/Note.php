@@ -5,9 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Note extends Model
+class Note extends BaseDatabaseModel
 {
     use HasFactory;
+
+    protected $table = 'notes';
 
     protected $fillable = ['title', 'body','user_id', 'is_active'];
 

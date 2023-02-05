@@ -4,33 +4,28 @@ namespace App\Http\Controllers;
 
 use App\Models\Tag;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class TagController extends Controller
 {
     public function index(Request $request)
     {
-        $tagQuery = Tag::query();
 
         if ($request->has('tag_type') && $request->has('tag_id')) {
+            $tagQuery = Tag::query();
             $tags = $tagQuery
                 ->where('taggable_id', $request['tag_id'])
                 ->where('taggable_type', $request['tag_type'])
                 ->get();
             return response()->json($tags, 200);
         }
-        $tags = Tag::query()->distinct()->get();
+        $tags = DB::table('keep_notes_app.tags')->distinct()->get();
 
         return response()->json($tags, 200);
     }
 
     public function store(Request $request)
     {
-        if ($request->has('tags')) {
-            foreach ($request['tags'] as $key => $value) {
-                dd($key, $value);
-            }
-        }
-
 
         $request->validate([
             'label' => 'required|min:3',
@@ -38,7 +33,7 @@ class TagController extends Controller
             'tag_id' => 'required'
         ]);
 
-        $tagQuery = Tag::query();
+        $tagQuery = DB::table('keep_notes_app.tags');
 
         if (!in_array($request['type'], ['FOLDER', 'NOTE'])) {
             return response()->json(['error_message' => 'Something went wrong'], 401);
@@ -53,10 +48,12 @@ class TagController extends Controller
         $data = [
             'label' => $request['label'],
             'taggable_id' => $request['tag_id'],
-            'taggable_type' => $request['type']
+            'taggable_type' => $request['type'],
+            'created_at' => now(),
+            'updated_at' => now(),
         ];
 
-        $tag = $tagQuery->create($data);
+        $data['id'] = $tagQuery->insertGetId($data);
         return response()->json($tag, 201);
     }
 
