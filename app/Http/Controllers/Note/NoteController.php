@@ -5,11 +5,7 @@ namespace App\Http\Controllers\Note;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
-use App\Models\FolderNote;
-use App\Models\Note;
-use App\Models\Tag;
 use App\Services\Notes\FetchAllNoteService;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class NoteController extends Controller
@@ -105,12 +101,8 @@ class NoteController extends Controller
         return response()->json($note, 200);
     }
 
-    public function index(Request $request, FetchAllNoteService $fetchAllNoteService): \Illuminate\Http\JsonResponse
+    public function index(FetchAllNoteService $fetchAllNoteService): \Illuminate\Http\JsonResponse
     {
-        $notes = $fetchAllNoteService->all();
-        
-
-
-        return response()->json($notes, 200);
+        return response()->json($fetchAllNoteService->all(), 200);
     }
 }
