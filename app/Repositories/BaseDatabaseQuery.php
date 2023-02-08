@@ -2,10 +2,14 @@
 
 namespace App\Repositories;
 
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 class BaseDatabaseQuery
 {
+    /**
+     * @var string|mixed
+     */
     protected string $dbName;
 
     public function __construct()
@@ -14,9 +18,9 @@ class BaseDatabaseQuery
     }
 
     /**
-     * @return \Illuminate\Database\Query\Builder
+     * @return Builder
      */
-    public function model(): \Illuminate\Database\Query\Builder
+    public function model(): Builder
     {
         return DB::table("{$this->dbName}.{$this->table}");
     }
@@ -25,18 +29,18 @@ class BaseDatabaseQuery
      * @param array $data
      * @return int
      */
-    public function store(array $data): int
+    public function create(array $data): int
     {
         return $this->model()
             ->insertGetId($data);
     }
 
     /**
-     * @param $id
+     * @param int $id
      * @param array $data
      * @return int
      */
-    public function update($id, array $data): int
+    public function update(int $id, array $data): int
     {
         return $this->model()
             ->where("{$this->table}.id", $id)
@@ -44,23 +48,17 @@ class BaseDatabaseQuery
     }
 
     /**
-     * @param $id
+     * @param int $id
      * @return int
      */
-    public function delete($id): int
+    public function delete(int $id): int
     {
         return $this->model()
             ->where("{$this->table}.id", $id)
             ->delete();
     }
 
-
-    /**
-     * @param $id
-     * @param array $select
-     * @return \Illuminate\Database\Query\Builder|null
-     */
-    public function findById($id, array $select = ['*']): \Illuminate\Database\Query\Builder|null
+    public function findById(int $id, array $select = ['*']): object|null
     {
         return $this->model()
             ->select($select)

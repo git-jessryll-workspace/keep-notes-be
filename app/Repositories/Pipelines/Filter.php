@@ -14,7 +14,7 @@ abstract class Filter
      */
     public function handle($request, Closure $next): mixed
     {
-        if (request()->has($this->filterName())) {
+        if (!request()->has($this->filterName())) {
             return $next($request);
         }
         $builder = $next($request);

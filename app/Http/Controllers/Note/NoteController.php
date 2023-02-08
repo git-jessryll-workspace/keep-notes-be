@@ -5,103 +5,66 @@ namespace App\Http\Controllers\Note;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreNoteRequest;
 use App\Http\Requests\UpdateNoteRequest;
+use App\Services\Notes\CreateNoteService;
+use App\Services\Notes\DeleteNoteService;
 use App\Services\Notes\FetchAllNoteService;
-use Illuminate\Support\Facades\DB;
+use App\Services\Notes\ShowNoteService;
+use App\Services\Notes\UpdateNoteService;
+use Illuminate\Http\JsonResponse;
 
 class NoteController extends Controller
 {
     /**
      * @param StoreNoteRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param CreateNoteService $createNoteService
+     * @return JsonResponse
      */
-    public function store(StoreNoteRequest $request): \Illuminate\Http\JsonResponse
+    public function store(StoreNoteRequest $request, CreateNoteService $createNoteService): JsonResponse
     {
-        $data = [
-            'title' => $request['title'],
-            'body' => $request['body'],
-            'user_id' => auth()->id(),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ];
-        $data['id'] = DB::table('keep_notes_app.notes')->insertGetId($data);
-        return response()->json($data, 201);
+        $data = ['title' => $request['title'], 'body' => $request['body']];
+        return response()->json($createNoteService->create($data), 201);
     }
+
 
     /**
      * @param $id
      * @param UpdateNoteRequest $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param UpdateNoteService $updateNoteService
+     * @return JsonResponse
      */
-    public function update($id, UpdateNoteRequest $request): \Illuminate\Http\JsonResponse
+    public function partialUpdate($id, UpdateNoteRequest $request, UpdateNoteService $updateNoteService): JsonResponse
     {
-
-        DB::table('keep_notes_app.notes')
-            ->where('id', $id)
-            ->update([
-                'title' => $request['title'],
-                'body' => $request['body'],
-                'updated_at' => now()
-            ]);
-
-        return response()->json([
-            'id' => $id,
+        return response()->json($updateNoteService->update((int)$id, [
             'title' => $request['title'],
-            'body' => $request['body'],
-            'updated_at' => now(),
-        ], 200);
+            'body' => $request['body']
+        ]), 200);
     }
 
     /**
      * @param $id
-     * @return \Illuminate\Http\JsonResponse
+     * @param DeleteNoteService $deleteNoteService
+     * @return JsonResponse
+     * @throws \Illuminate\Validation\ValidationException
      */
-    public function destroy($id): \Illuminate\Http\JsonResponse
+    public function destroy($id, DeleteNoteService $deleteNoteService): JsonResponse
     {
-        $note = DB::table('keep_notes_app.notes')
-            ->where('id', $id)
-            ->select(['id'])
-            ->first();
-
-        if (!$note) {
-            return response()->json([
-                'error_message' => "Data not found",
-            ], 404);
-        }
-
-        if ($note->user_id !== auth()->id()) {
-            return response()->json([
-                'error_message' => "Not Authorized",
-            ], 401);
-        }
-
-        $note->delete();
-
-        return response()->json([
-            'message' => 'Data deleted'
-        ], 204);
+        return response()->json($deleteNoteService->delete((int) $id), 204);
     }
 
     /**
      * @param $id
-     * @return \Illuminate\Http\JsonResponse
+     * @return JsonResponse
      */
-    public function show($id): \Illuminate\Http\JsonResponse
+    public function show($id, ShowNoteService $showNoteService): JsonResponse
     {
-        $note = DB::table('keep_notes_app.notes')
-            ->where('id', $id)
-            ->select(['title', 'body', 'id', 'updated_at', 'is_active'])
-            ->first();
-
-        if (!$note) {
-            return response()->json([
-                'error_message' => "Data not found",
-            ], 404);
-        }
-
-        return response()->json($note, 200);
+        return response()->json($showNoteService->show((int) $id), 200);
     }
 
-    public function index(FetchAllNoteService $fetchAllNoteService): \Illuminate\Http\JsonResponse
+    /**
+     * @param FetchAllNoteService $fetchAllNoteService
+     * @return JsonResponse
+     */
+    public function index(FetchAllNoteService $fetchAllNoteService): JsonResponse
     {
         return response()->json($fetchAllNoteService->all(), 200);
     }

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FavoriteController;
 use App\Http\Controllers\Folder\FolderController;
 use App\Http\Controllers\Folder\FolderNoteController;
 use App\Http\Controllers\Note\NoteController;
@@ -28,7 +29,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::post('/', 'store');
         Route::prefix('{id}')->group(function () {
             Route::get('/', 'show');
-            Route::put('/', 'update')->withoutMiddleware('throttle:api');
+            Route::patch('/', 'partialUpdate')->withoutMiddleware('throttle:api');
             Route::delete('/', 'destroy');
         });
     });
@@ -37,7 +38,7 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/', 'index');
         Route::post('/', 'store');
         Route::prefix('{id}')->group(function () {
-            Route::put('/', 'update');
+//            Route::put('/', 'update');
             Route::delete('/', 'destroy');
         });
     });
@@ -58,4 +59,13 @@ Route::middleware(['auth:sanctum'])->group(function () {
             Route::delete('/', 'destroy');
         });
     });
+
+    Route::prefix('favorites')->controller(FavoriteController::class)->group(function() {
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+        Route::prefix('{id}')->group(function() {
+           Route::delete('/', 'destroy');
+        });
+    });
+
 });

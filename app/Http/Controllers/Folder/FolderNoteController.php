@@ -3,57 +3,43 @@
 namespace App\Http\Controllers\Folder;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Http\Requests\StoreFolderNoteRequest;
+use App\Services\FolderNotes\CreateFolderNoteService;
+use App\Services\FolderNotes\DeleteFolderNoteService;
+use App\Services\FolderNotes\FetchAllFolderNoteService;
+use Illuminate\Http\JsonResponse;
 
 class FolderNoteController extends Controller
 {
     /**
-     * @return \Illuminate\Http\JsonResponse
+     * @param FetchAllFolderNoteService $fetchAllFolderNoteService
+     * @return JsonResponse
      */
-    public function index(): \Illuminate\Http\JsonResponse
+    public function index(FetchAllFolderNoteService $fetchAllFolderNoteService): JsonResponse
     {
-        $userId = auth()->id();
-        $folderNotes = DB::table('keep_notes_app.folder_notes')
-            ->where('folder_notes.user_id', $userId)
-            ->select(['id', 'user_id', 'folder_id', 'note_id'])
-            ->get();
-        return response()->json($folderNotes);
+        return response()->json($fetchAllFolderNoteService->all());
     }
 
     /**
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
+     * @param StoreFolderNoteRequest $request
+     * @param CreateFolderNoteService $createFolderNoteService
+     * @return JsonResponse
      */
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(StoreFolderNoteRequest $request, CreateFolderNoteService $createFolderNoteService): JsonResponse
     {
-        $request->validate([
-            'folder_id' => 'required',
-            'note_id' => 'required'
-        ]);
-        $data = [
+        return response()->json($createFolderNoteService->create([
             'folder_id' => $request['folder_id'],
-            'note_id' => $request['note_id'],
-            'user_id' => $request->user()->id,
-            'created_at' => now(),
-            'updated_at' => now()
-        ];
-        $data['id'] = DB::table('keep_notes_app.folder_notes')->insertGetId($data);
-
-        return response()->json($data, 201);
+            'note_id' => $request['note_id']
+        ]), 201);
     }
 
     /**
      * @param $id
-     * @return \Illuminate\Http\JsonResponse
+     * @param DeleteFolderNoteService $deleteFolderNoteService
+     * @return JsonResponse
      */
-    public function destroy($id): \Illuminate\Http\JsonResponse
+    public function destroy($id, DeleteFolderNoteService $deleteFolderNoteService): JsonResponse
     {
-        DB::table('keep_notes_app.folder_notes')
-            ->where('id', $id)
-            ->delete();
-        return response()->json([
-            'message' => 'Data deleted'
-        ], 204);
+        return response()->json($deleteFolderNoteService->delete((int) $id), 204);
     }
 }
